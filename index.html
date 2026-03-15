@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="勤怠管理">
+<meta name="theme-color" content="#1a3a2a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>勤怠管理システム</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Meiryo','Yu Gothic',sans-serif;background:#f4f4f0;color:#1a1a1a;font-size:15px;padding-bottom:env(safe-area-inset-bottom)}
+.header{background:#1a3a2a;color:#fff;padding:14px 20px;padding-top:calc(14px + env(safe-area-inset-top));display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.header h1{font-size:17px;font-weight:700;letter-spacing:.05em}
+.header .sub{font-size:12px;color:#9fc;opacity:.85;margin-left:auto}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #d0d0c8;position:sticky;top:calc(50px + env(safe-area-inset-top));z-index:99;overflow-x:auto}
+.tab{flex:1;min-width:80px;padding:12px 8px;cursor:pointer;font-size:13px;font-weight:600;color:#666;border:none;background:transparent;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.tab.active{color:#1a3a2a;border-bottom-color:#1a3a2a}
+.main{max-width:960px;margin:0 auto;padding:16px 12px}
+.panel{display:none}.panel.active{display:block}
+.card{background:#fff;border:1px solid #ddddd5;border-radius:10px;padding:16px;margin-bottom:12px}
+.card-title{font-size:13px;font-weight:700;color:#555;margin-bottom:12px;letter-spacing:.04em}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:11px;font-weight:700;color:#777;margin-bottom:4px;letter-spacing:.03em}
+.field input,.field select{width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:8px;font-size:15px;font-family:inherit;background:#fff;color:#1a1a1a;-webkit-appearance:none;appearance:none}
+.field input:focus,.field select:focus{outline:none;border-color:#1a3a2a;box-shadow:0 0 0 2px rgba(26,58,42,.12)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:600px){
+  .grid-3{grid-template-columns:1fr 1fr}
+  .grid-4-mobile{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+}
+@media(min-width:601px){
+  .grid-4-mobile{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+}
+.btn{padding:11px 18px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#1a1a1a;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.btn-primary{background:#1a3a2a;color:#fff;border-color:#1a3a2a;width:100%;padding:14px;font-size:15px;margin-top:4px}
+.btn-danger{color:#a32d2d;border-color:#e8b0b0;background:#fff}
+.btn-print{background:#185fa5;color:#fff;border-color:#185fa5}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-block{width:100%;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 8px;color:#666;font-weight:700;font-size:11px;border-bottom:2px solid #e8e8e0;background:#fafaf7;white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid #eeeeea;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700}
+.badge-leave{background:#faeeda;color:#854f0b}
+.badge-holiday{background:#faece7;color:#993c1d}
+.badge-absent{background:#f0f0e8;color:#555}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+@media(min-width:500px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:#fff;border:1px solid #ddddd5;border-radius:8px;padding:12px;text-align:center}
+.stat-num{font-size:22px;font-weight:700;color:#1a3a2a}
+.stat-label{font-size:11px;color:#888;margin-top:2px}
+.filter-bar{display:flex;gap:8px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap}
+.filter-bar .field{margin:0;flex:1;min-width:120px}
+.empty{text-align:center;padding:32px;color:#999;font-size:14px}
+.worker-block{margin-bottom:20px}
+.worker-head{font-size:14px;font-weight:700;color:#1a3a2a;padding:8px 12px;background:#eef5f0;border-left:4px solid #1a3a2a;border-radius:0 6px 6px 0;margin-bottom:8px}
+.total-bar{display:flex;gap:12px;flex-wrap:wrap;background:#f8f8f5;border-radius:6px;padding:8px 10px;margin-top:6px;font-size:12px;font-weight:700;color:#444}
+.total-bar span{color:#1a3a2a}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media print{
+  .header .sub{display:none}
+  .tabs,.filter-bar,.btn,.no-print{display:none!important}
+  .panel{display:block!important}
+  body{background:#fff}
+  .card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}
+  .worker-block{break-inside:avoid;page-break-inside:avoid}
+  .stats{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="10" width="16" height="8" rx="1" fill="#9fc"/><rect x="6" y="4" width="8" height="6" rx="1" fill="#9fc" opacity=".7"/><rect x="8" y="7" width="4" height="3" rx=".5" fill="#1a3a2a"/></svg>
+  <h1>勤怠管理システム</h1>
+  <div class="sub" id="header-date"></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('input')">勤怠入力</button>
+  <button class="tab" onclick="switchTab('list')">記録一覧</button>
+  <button class="tab" onclick="switchTab('report')">月次集計・印刷</button>
+</div>
+
+<div class="main">
+
+  <!-- 入力 -->
+  <div class="panel active" id="panel-input">
+    <div class="card">
+      <div class="card-title">基本情報</div>
+      <div class="grid-3" style="margin-bottom:10px">
+        <div class="field" style="margin:0"><label>日付</label><input type="date" id="inp-date"></div>
+        <div class="field" style="margin:0"><label>従業員名</label><input type="text" id="inp-name" list="worker-list" placeholder="氏名"><datalist id="worker-list"></datalist></div>
+        <div class="field" style="margin:0"><label>現場名</label><input type="text" id="inp-site" list="site-list" placeholder="現場名"><datalist id="site-list"></datalist></div>
+      </div>
+      <div class="grid-4-mobile" style="margin-bottom:12px">
+        <div class="field" style="margin:0"><label>出勤時刻</label><input type="time" id="inp-start" value="08:00"></div>
+        <div class="field" style="margin:0"><label>退勤時刻</label><input type="time" id="inp-end" value="17:00"></div>
+        <div class="field" style="margin:0"><label>残業時間（h）</label><input type="number" id="inp-ot" min="0" max="15" step="0.5" value="0"></div>
+        <div class="field" style="margin:0"><label>区分</label>
+          <select id="inp-type">
+            <option value="出勤">出勤</option>
+            <option value="有給">有給</option>
+            <option value="休日出勤">休日出勤</option>
+            <option value="欠勤">欠勤</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="addRecord()">記録を追加</button>
+    </div>
+    <div id="today-preview"></div>
+  </div>
+
+  <!-- 一覧 -->
+  <div class="panel" id="panel-list">
+    <div class="filter-bar no-print">
+      <div class="field"><label>月</label><input type="month" id="filter-month"></div>
+      <div class="field"><label>従業員名</label><input type="text" id="filter-name" placeholder="絞り込み" oninput="renderList()"></div>
+      <button class="btn" onclick="renderList()" style="margin-bottom:1px;white-space:nowrap">検索</button>
+    </div>
+    <div class="card" style="padding:0">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>日付</th><th>氏名</th><th>出勤</th><th>退勤</th><th>残業</th><th>現場名</th><th>区分</th><th></th></tr></thead>
+          <tbody id="list-body"><tr><td colspan="8" class="empty">記録がありません</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 集計 -->
+  <div class="panel" id="panel-report">
+    <div class="filter-bar no-print">
+      <div class="field"><label>集計月</label><input type="month" id="report-month" onchange="renderReport()"></div>
+      <button class="btn btn-print" onclick="window.print()" style="white-space:nowrap">🖨 印刷/PDF</button>
+    </div>
+    <div id="report-body"><div class="empty">月を選択してください</div></div>
+  </div>
+
+</div>
+
+<script>
+let records = JSON.parse(localStorage.getItem('constr_att_v2') || '[]');
+function save(){ localStorage.setItem('constr_att_v2', JSON.stringify(records)); }
+
+const today = new Date().toISOString().slice(0,10);
+document.getElementById('inp-date').value = today;
+document.getElementById('filter-month').value = today.slice(0,7);
+document.getElementById('report-month').value = today.slice(0,7);
+document.getElementById('header-date').textContent = new Date().toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'});
+
+function switchTab(t){
+  ['input','list','report'].forEach(id=>{
+    document.getElementById('panel-'+id).classList.toggle('active', id===t);
+  });
+  document.querySelectorAll('.tab').forEach((el,i)=>{
+    el.classList.toggle('active', ['input','list','report'][i]===t);
+  });
+  if(t==='list') renderList();
+  if(t==='report') renderReport();
+  window.scrollTo(0,0);
+}
+
+function updateDatalist(){
+  document.getElementById('worker-list').innerHTML = [...new Set(records.map(r=>r.name))].map(n=>`<option value="${n}">`).join('');
+  document.getElementById('site-list').innerHTML   = [...new Set(records.map(r=>r.site))].map(s=>`<option value="${s}">`).join('');
+}
+updateDatalist();
+
+function addRecord(){
+  const name = document.getElementById('inp-name').value.trim();
+  const site = document.getElementById('inp-site').value.trim();
+  const date = document.getElementById('inp-date').value;
+  if(!name||!site||!date){ alert('日付・氏名・現場名は必須です'); return; }
+  records.push({
+    id: Date.now(), date, name, site,
+    start: document.getElementById('inp-start').value,
+    end:   document.getElementById('inp-end').value,
+    ot:    parseFloat(document.getElementById('inp-ot').value)||0,
+    type:  document.getElementById('inp-type').value
+  });
+  save(); updateDatalist();
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-ot').value = '0';
+  document.getElementById('inp-type').value = '出勤';
+  renderTodayPreview();
+}
+
+function deleteRecord(id){
+  if(!confirm('この記録を削除しますか？')) return;
+  records = records.filter(r=>r.id!==id);
+  save(); renderTodayPreview(); renderList();
+}
+
+function badge(type){
+  if(type==='有給') return '<span class="badge badge-leave">有給</span>';
+  if(type==='休日出勤') return '<span class="badge badge-holiday">休日出勤</span>';
+  if(type==='欠勤') return '<span class="badge badge-absent">欠勤</span>';
+  return '';
+}
+
+function renderTodayPreview(){
+  const d = document.getElementById('inp-date').value;
+  const recs = records.filter(r=>r.date===d);
+  const el = document.getElementById('today-preview');
+  if(!recs.length){ el.innerHTML=''; return; }
+  el.innerHTML = `<div class="card"><div class="card-title">${d} の入力済み記録</div>
+    <div class="table-wrap"><table><thead><tr><th>氏名</th><th>出勤</th><th>退勤</th><th>残業</th><th>現場名</th><th>区分</th><th></th></tr></thead>
+    <tbody>${recs.map(r=>`<tr><td>${r.name}</td><td>${r.start}</td><td>${r.end}</td><td>${r.ot>0?r.ot+'h':'-'}</td><td>${r.site}</td><td>${badge(r.type)||'出勤'}</td><td><button class="btn btn-danger btn-sm" onclick="deleteRecord(${r.id})">削除</button></td></tr>`).join('')}
+    </tbody></table></div></div>`;
+}
+renderTodayPreview();
+
+function renderList(){
+  const month = document.getElementById('filter-month').value;
+  const nameF = document.getElementById('filter-name').value.trim();
+  let recs = records.filter(r=>r.date.startsWith(month));
+  if(nameF) recs = recs.filter(r=>r.name.includes(nameF));
+  recs.sort((a,b)=>a.date.localeCompare(b.date));
+  const tb = document.getElementById('list-body');
+  if(!recs.length){ tb.innerHTML='<tr><td colspan="8" class="empty">記録がありません</td></tr>'; return; }
+  tb.innerHTML = recs.map(r=>`<tr><td>${r.date.slice(5)}</td><td>${r.name}</td><td>${r.start}</td><td>${r.end}</td><td>${r.ot>0?r.ot+'h':'-'}</td><td>${r.site}</td><td>${badge(r.type)||'出勤'}</td><td><button class="btn btn-danger btn-sm" onclick="deleteRecord(${r.id});renderList()">削除</button></td></tr>`).join('');
+}
+
+function calcHours(r){
+  if(r.type==='有給'||r.type==='欠勤') return 0;
+  const [sh,sm]=r.start.split(':').map(Number);
+  const [eh,em]=r.end.split(':').map(Number);
+  return Math.max(0,(eh*60+em-sh*60-sm)/60);
+}
+
+function renderReport(){
+  const month = document.getElementById('report-month').value;
+  const recs  = records.filter(r=>r.date.startsWith(month)).sort((a,b)=>a.date.localeCompare(b.date));
+  const el    = document.getElementById('report-body');
+  if(!recs.length){ el.innerHTML='<div class="empty">この月の記録がありません</div>'; return; }
+  const workers = [...new Set(recs.map(r=>r.name))].sort();
+  const sites   = [...new Set(recs.map(r=>r.site))].sort();
+  const [y,m]   = month.split('-');
+  let html = `<div class="stats no-print">
+    <div class="stat"><div class="stat-num">${workers.length}</div><div class="stat-label">従業員数</div></div>
+    <div class="stat"><div class="stat-num">${recs.filter(r=>r.type==='出勤'||r.type==='休日出勤').length}</div><div class="stat-label">延べ出勤日数</div></div>
+    <div class="stat"><div class="stat-num">${recs.reduce((a,r)=>a+r.ot,0).toFixed(1)}h</div><div class="stat-label">総残業時間</div></div>
+    <div class="stat"><div class="stat-num">${recs.filter(r=>r.type==='有給').length}</div><div class="stat-label">有給取得数</div></div>
+  </div>`;
+  html += `<div class="card"><div style="font-size:16px;font-weight:700;margin-bottom:14px;color:#1a3a2a">${y}年${m}月　従業員別勤怠表</div>`;
+  workers.forEach(w=>{
+    const wr=recs.filter(r=>r.name===w);
+    const wOT=wr.reduce((a,r)=>a+r.ot,0);
+    const wH=wr.reduce((a,r)=>a+calcHours(r),0);
+    html+=`<div class="worker-block"><div class="worker-head">${w}</div>
+    <div class="table-wrap"><table><thead><tr><th>日付</th><th>出勤</th><th>退勤</th><th>残業</th><th>区分</th><th>現場名</th></tr></thead>
+    <tbody>${wr.map(r=>`<tr><td>${r.date}</td><td>${r.type==='有給'||r.type==='欠勤'?'-':r.start}</td><td>${r.type==='有給'||r.type==='欠勤'?'-':r.end}</td><td>${r.ot>0?r.ot+'h':'-'}</td><td>${badge(r.type)||'出勤'}</td><td>${r.site}</td></tr>`).join('')}</tbody>
+    </table></div>
+    <div class="total-bar"><span>出勤 ${wr.filter(r=>r.type==='出勤').length}日</span><span>休日出勤 ${wr.filter(r=>r.type==='休日出勤').length}日</span><span>有給 ${wr.filter(r=>r.type==='有給').length}日</span><span>欠勤 ${wr.filter(r=>r.type==='欠勤').length}日</span><span>残業 ${wOT.toFixed(1)}h</span><span>実働 ${wH.toFixed(1)}h</span></div></div>`;
+  });
+  html+=`</div><div class="card"><div style="font-size:16px;font-weight:700;margin-bottom:14px;color:#1a3a2a">現場別工数集計</div>
+  <div class="table-wrap"><table><thead><tr><th>現場名</th><th>延べ人数</th><th>実働時間</th><th>残業時間</th></tr></thead><tbody>
+  ${sites.map(s=>{const sr=recs.filter(r=>r.site===s);return`<tr><td>${s}</td><td>${sr.length}人日</td><td>${sr.reduce((a,r)=>a+calcHours(r),0).toFixed(1)}h</td><td>${sr.reduce((a,r)=>a+r.ot,0).toFixed(1)}h</td></tr>`;}).join('')}
+  </tbody></table></div></div>`;
+  const or=recs.filter(r=>r.ot>0||r.type==='休日出勤');
+  if(or.length){html+=`<div class="card"><div style="font-size:16px;font-weight:700;margin-bottom:14px;color:#1a3a2a">残業・休日出勤一覧</div>
+  <div class="table-wrap"><table><thead><tr><th>日付</th><th>氏名</th><th>現場名</th><th>区分</th><th>残業</th></tr></thead><tbody>
+  ${or.map(r=>`<tr><td>${r.date}</td><td>${r.name}</td><td>${r.site}</td><td>${badge(r.type)||'出勤'}</td><td>${r.ot>0?r.ot+'h':'-'}</td></tr>`).join('')}
+  </tbody></table></div></div>`;}
+  el.innerHTML=html;
+}
+
+// Service Worker 登録
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
